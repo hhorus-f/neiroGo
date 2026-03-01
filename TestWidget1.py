@@ -1,375 +1,202 @@
 import sys
-import random
-import math
-from PySide6.QtWidgets import (QApplication, QMainWindow, QGraphicsView, 
-                               QGraphicsScene, QGraphicsEllipseItem, QWidget,
-                               QVBoxLayout, QHBoxLayout, QSlider, QLabel, QPushButton)
-from PySide6.QtCore import Qt, QTimer, QPointF, Signal, QObject
-from PySide6.QtGui import QBrush, QColor, QPainter, QPen
+from PySide6.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsEllipseItem, QVBoxLayout, QWidget, QLabel, QSpinBox
+from PySide6.QtCore import QObject, QTimer, Signal, QPointF, QRectF
+from PySide6.QtGui import QColor, QBrush, QPen
 
-
-class FlyingBall(QGraphicsEllipseItem):
-    """Класс летающего шарика (без сигналов)"""
-    
-    def __init__(self, x, y, radius, speed=5):
-        super().__init__(x - radius, y - radius, radius * 2, radius * 2)
-        
-        self.radius = radius
-        self.speed = speed
-        
-        # Начальное направление движения (случайное)
-        angle = random.uniform(0, 2 * math.pi)
-        self.vx = math.cos(angle) * speed
-        self.vy = math.sin(angle) * speed
-        
-        # Настройка внешнего вида
-        self.normal_color = QColor(255, 100, 100)
-        self.clicked_color = QColor(100, 255, 100)
-        self.setBrush(QBrush(self.normal_color))
-        self.setPen(QPen(Qt.GlobalColor.black, 2))
-        
-        # Флаги состояния
-        self.is_clicked = False
-        self.is_moving = True
-        
-        # Включаем обработку событий мыши
-        self.setAcceptHoverEvents(True)
-        self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)
-        
-        # Ссылка на менеджер (будет установлена позже)
-        self.manager = None
-        
-    def set_manager(self, manager):
-        """Установка ссылки на менеджер"""
-        self.manager = manager
-        
-    def update_position(self, scene_rect):
-        """Обновление позиции шарика"""
-        if not self.is_moving:
-            return
-            
-        new_pos = self.pos() + QPointF(self.vx, self.vy)
-        wall_hit = False
-        
-        # Проверка столкновений со стенками
-        if new_pos.x() - self.radius <= 0:
-            self.vx = -self.vx
-            new_pos.setX(self.radius)
-            if self.manager:
-                self.manager.on_ball_hit_wall(self, "left")
-            wall_hit = True
-            
-        elif new_pos.x() + self.radius >= scene_rect.width():
-            self.vx = -self.vx
-            new_pos.setX(scene_rect.width() - self.radius)
-            if self.manager:
-                self.manager.on_ball_hit_wall(self, "right")
-            wall_hit = True
-            
-        if new_pos.y() - self.radius <= 0:
-            self.vy = -self.vy
-            new_pos.setY(self.radius)
-            if self.manager:
-                self.manager.on_ball_hit_wall(self, "top")
-            wall_hit = True
-            
-        elif new_pos.y() + self.radius >= scene_rect.height():
-            self.vy = -self.vy
-            new_pos.setY(scene_rect.height() - self.radius)
-            if self.manager:
-                self.manager.on_ball_hit_wall(self, "bottom")
-            wall_hit = True
-        
-        self.setPos(new_pos)
-    
-    def set_speed(self, new_speed):
-        """Изменение скорости шарика"""
-        current_vx = self.vx
-        current_vy = self.vy
-        current_speed = math.sqrt(current_vx**2 + current_vy**2)
-        
-        if current_speed > 0:
-            scale = new_speed / current_speed
-            self.vx = current_vx * scale
-            self.vy = current_vy * scale
-        else:
-            angle = random.uniform(0, 2 * math.pi)
-            self.vx = math.cos(angle) * new_speed
-            self.vy = math.sin(angle) * new_speed
-        
-        self.speed = new_speed
-    
-    def set_direction(self, angle_degrees):
-        """Установка направления движения (в градусах)"""
-        angle_rad = math.radians(angle_degrees)
-        current_speed = self.speed
-        self.vx = math.cos(angle_rad) * current_speed
-        self.vy = math.sin(angle_rad) * current_speed
-    
-    def reverse_direction(self):
-        """Разворот шарика"""
-        self.vx = -self.vx
-        self.vy = -self.vy
-    
-    def stop(self):
-        """Остановка шарика"""
-        self.is_moving = False
-        self.vx = 0
-        self.vy = 0
-    
-    def start(self):
-        """Запуск шарика"""
-        if not self.is_moving:
-            self.is_moving = True
-            self.set_speed(self.speed)
-    
-    def set_color(self, color):
-        """Установка цвета шарика"""
-        self.normal_color = color
-        if not self.is_clicked:
-            self.setBrush(QBrush(color))
-    
-    def mousePressEvent(self, event):
-        """Обработка нажатия на шарик"""
-        self.is_clicked = True
-        self.setBrush(QBrush(self.clicked_color))
-        pos = self.pos()
-        if self.manager:
-            self.manager.on_ball_clicked(self, pos.x(), pos.y())
-        super().mousePressEvent(event)
-    
-    def mouseReleaseEvent(self, event):
-        """Обработка отпускания шарика"""
-        self.is_clicked = False
-        self.setBrush(QBrush(self.normal_color))
-        pos = self.pos()
-        if self.manager:
-            self.manager.on_ball_released(self, pos.x(), pos.y())
-        super().mouseReleaseEvent(event)
-
-
-class BallSceneManager(QObject):
-    """Менеджер для управления шариком в сцене"""
-    
-    # Сигналы на уровне класса
-    ball_clicked = Signal(object, float, float)
-    ball_released = Signal(object, float, float)
-    ball_hit_wall = Signal(object, str)
-    background_clicked = Signal(float, float)
-    
-    def __init__(self, graphics_view):
+class BallScene(QGraphicsScene):
+    """
+    Кастомная сцена для обработки нажатий мыши.
+    Сообщает контроллеру, куда был сделан клик.
+    """
+    def __init__(self, controller):
         super().__init__()
+        self.controller = controller
+        self.setBackgroundBrush(QColor("#f0f0f0"))
+
+    def mousePressEvent(self, event):
+        # Получаем позицию клика в координатах сцены
+        scene_pos = event.scenePos()
         
-        self.view = graphics_view
-        self.scene = graphics_view.scene()
+        # Проверяем, есть ли объект в этой точке
+        # itemAt требует трансформацию вида, но мы можем получить список элементов
+        items = self.items(scene_pos)
         
-        if self.scene is None:
-            self.scene = QGraphicsScene()
-            self.view.setScene(self.scene)
+        # Ищем наш шарик в списке элементов под курсором
+        ball_clicked = False
+        for item in items:
+            if item == self.controller.ball_item:
+                ball_clicked = True
+                break
         
-        self.ball = None
+        if ball_clicked:
+            self.controller.ball_clicked.emit(scene_pos)
+        else:
+            self.controller.background_clicked.emit(scene_pos)
+            
+        # Вызываем базовый обработчик, чтобы события шли дальше при необходимости
+        super().mousePressEvent(event)
+
+class FlyingBallController(QObject):
+    """
+    Класс-контроллер, который принимает QGraphicsView и управляет шариком.
+    """
+    # Сигналы
+    ball_clicked = Signal(QPointF)       # Сигнал при клике на шарик (координаты сцены)
+    background_clicked = Signal(QPointF) # Сигнал при клике на фон (координаты сцены)
+
+    def __init__(self, view: QGraphicsView):
+        super().__init__()
+        self.view = view
+        
+        # Создаем сцену
+        self.scene = BallScene(self)
+        self.view.setScene(self.scene)
+        
+        # Устанавливаем размер сцены (например, 800x600)
+        self.scene.setSceneRect(0, 0, 800, 600)
+        
+        # Создаем шарик
+        self.ball_size = 40
+        self.ball_item = QGraphicsEllipseItem(0, 0, self.ball_size, self.ball_size)
+        self.ball_item.setBrush(QBrush(QColor("red")))
+        self.ball_item.setPen(QPen(QColor("darkred"), 2))
+        # self.ball_item.setFlags(self.ball_item.ItemIsMovable) # Можно включить, если нужно таскать мышкой
+        self.scene.addItem(self.ball_item)
+        
+        # Начальная позиция
+        self.pos_x = 100
+        self.pos_y = 100
+        self.ball_item.setPos(self.pos_x, self.pos_y)
+        
+        # Параметры движения
+        self.dx = 3.0  # Скорость по X
+        self.dy = 3.0  # Скорость по Y
+        
+        # Таймер анимации
         self.timer = QTimer()
-        self.timer.timeout.connect(self.update_animation)
+        self.timer.timeout.connect(self._update_position)
+        self.timer.start(16) # ~60 FPS
         
-        # Настройка view
-        self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # Флаг активности
+        self.is_active = True
+
+    def set_Size(self,data:list):
+        self.scene.setSceneRect(data[0], data[1], data[2], data[3])
+
+    def set_speed(self, multiplier: float):
+        """
+        Настройка скорости полета.
+        :param multiplier: Множитель скорости (1.0 - норм, 2.0 - в 2 раза быстрее)
+        """
+        base_speed = 3.0
+        # Сохраняем направление, меняем только модуль вектора
+        sign_x = 1 if self.dx >= 0 else -1
+        sign_y = 1 if self.dy >= 0 else -1
         
-        # Сохраняем оригинальный обработчик
-        self.original_mouse_press = self.view.mousePressEvent
+        self.dx = base_speed * multiplier * sign_x
+        self.dy = base_speed * multiplier * sign_y
+
+    def set_timer_interval(self, ms: int):
+        """
+        Настройка плавности/частоты обновления (в миллисекундах).
+        Меньше значение = плавнее, но больше нагрузка.
+        """
+        self.timer.setInterval(ms)
+
+    def _update_position(self):
+        if not self.is_active:
+            return
+
+        # Текущие координаты
+        x = self.ball_item.x()
+        y = self.ball_item.y()
         
-        # Переопределяем обработчик событий view
-        self.view.mousePressEvent = self.view_mouse_press
+        # Предсказываем следующую позицию
+        next_x = x + self.dx
+        next_y = y + self.dy
         
-        print("✓ BallSceneManager инициализирован")
+        # Границы сцены
+        rect = self.scene.sceneRect()
+        radius = self.ball_size / 2
         
-    def create_ball(self, x=None, y=None, radius=30, speed=5):
-        """Создание шарика"""
-        try:
-            print("\n=== Создание шарика ===")
+        # Отскок от стен (простая физика)
+        if next_x <= rect.left() or next_x + self.ball_size >= rect.right():
+            self.dx = -self.dx
+            next_x = x + self.dx # Корректируем, чтобы не застрял в стене
             
-            if x is None:
-                x = self.view.width() // 2
-            if y is None:
-                y = self.view.height() // 2
+        if next_y <= rect.top() or next_y + self.ball_size >= rect.bottom():
+            self.dy = -self.dy
+            next_y = y + self.dy
             
-            print(f"Позиция: ({x}, {y}), радиус: {radius}, скорость: {speed}")
-            
-            # Создаем шарик
-            self.ball = FlyingBall(x, y, radius, speed)
-            self.ball.set_manager(self)  # Устанавливаем ссылку на менеджер
-            self.scene.addItem(self.ball)
-            
-            print("✓ Шарик создан и добавлен в сцену")
-            
-            # Устанавливаем размер сцены
-            self.update_scene_rect()
-            
-            print("✓ Шарик создан успешно")
-            print("========================\n")
-            
-            return self.ball
-            
-        except Exception as e:
-            print(f"✗ Ошибка при создании шарика: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
-    
-    def on_ball_clicked(self, ball, x, y):
-        """Обработка нажатия на шарик (вызывается из шарика)"""
-        print(f"  → Получено нажатие на шарик в менеджере: ({x:.1f}, {y:.1f})")
-        self.ball_clicked.emit(ball, x, y)
-    
-    def on_ball_released(self, ball, x, y):
-        """Обработка отпускания шарика (вызывается из шарика)"""
-        print(f"  → Получено отпускание шарика в менеджере: ({x:.1f}, {y:.1f})")
-        self.ball_released.emit(ball, x, y)
-    
-    def on_ball_hit_wall(self, ball, wall):
-        """Обработка удара о стену (вызывается из шарика)"""
-        print(f"  → Получен удар о стену в менеджере: {wall}")
-        self.ball_hit_wall.emit(ball, wall)
-    
-    def update_scene_rect(self):
-        """Обновление размера сцены"""
-        if self.view.width() > 0 and self.view.height() > 0:
-            self.scene.setSceneRect(0, 0, self.view.width(), self.view.height())
-    
-    def view_mouse_press(self, event):
-        """Обработка нажатий на view"""
-        try:
-            scene_pos = self.view.mapToScene(event.pos())
-            item = self.view.itemAt(event.pos())
-            
-            if item is None and self.ball is not None:
-                print(f"✓ Нажатие на фон в позиции ({scene_pos.x():.1f}, {scene_pos.y():.1f})")
-                self.background_clicked.emit(scene_pos.x(), scene_pos.y())
-            
-            # Вызываем оригинальный обработчик
-            if self.original_mouse_press:
-                self.original_mouse_press(event)
-            else:
-                QGraphicsView.mousePressEvent(self.view, event)
-                
-        except Exception as e:
-            print(f"✗ Ошибка в view_mouse_press: {e}")
-    
-    def start_animation(self, interval_ms=20):
-        """Запуск анимации"""
-        self.timer.start(interval_ms)
-        print("✓ Анимация запущена")
-    
-    def stop_animation(self):
-        """Остановка анимации"""
+        self.ball_item.setPos(next_x, next_y)
+
+    def stop(self):
         self.timer.stop()
-        print("✓ Анимация остановлена")
-    
-    def update_animation(self):
-        """Обновление анимации"""
-        try:
-            if self.ball and self.scene.sceneRect().isValid():
-                self.ball.update_position(self.scene.sceneRect())
-                self.scene.update()
-        except Exception as e:
-            print(f"✗ Ошибка в update_animation: {e}")
-    
-    def set_ball_speed(self, speed):
-        """Установка скорости шарика"""
-        if self.ball:
-            self.ball.set_speed(speed)
-            print(f"✓ Скорость изменена на {speed}")
-    
-    def remove_ball(self):
-        """Удаление шарика"""
-        if self.ball:
-            self.scene.removeItem(self.ball)
-            self.ball = None
-            print("✓ Шарик удален")
+        self.is_active = False
 
+    def start(self):
+        self.timer.start()
+        self.is_active = True
 
-# Пример использования
-class ExampleWindow(QMainWindow):
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        
-        self.setWindowTitle("Пример использования FlyingBall")
-        self.setGeometry(100, 100, 800, 600)
-        
-        # Создаем центральный виджет
+        self.setWindowTitle("Летающий шарик PySide6")
+        self.resize(1000, 700)
+
+        # Центральный виджет
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+
+        # Панель управления
+        control_layout = QVBoxLayout()
         
-        # Создаем QGraphicsView
-        self.view = QGraphicsView()
-        layout.addWidget(self.view)
+        self.speed_label = QLabel("Скорость (множитель): 1.0")
+        self.speed_spin = QSpinBox()
+        self.speed_spin.setRange(1, 20)
+        self.speed_spin.setValue(1)
+        self.speed_spin.valueChanged.connect(self.on_speed_changed)
         
-        # Создаем менеджер для шарика
-        self.ball_manager = BallSceneManager(self.view)
-        
-        # Создаем шарик
-        self.ball = self.ball_manager.create_ball(radius=30, speed=5)
-        
-        # Подключаем сигналы
-        self.ball_manager.ball_clicked.connect(self.on_ball_clicked)
-        self.ball_manager.ball_released.connect(self.on_ball_released)
-        self.ball_manager.ball_hit_wall.connect(self.on_ball_hit_wall)
-        self.ball_manager.background_clicked.connect(self.on_background_clicked)
-        
-        # Запускаем анимацию
-        self.ball_manager.start_animation()
-        
-        # Создаем панель управления
-        self.create_control_panel(layout)
-    
-    def create_control_panel(self, layout):
-        control_panel = QWidget()
-        control_layout = QHBoxLayout(control_panel)
-        
-        self.speed_label = QLabel("Скорость: 5")
         control_layout.addWidget(self.speed_label)
+        control_layout.addWidget(self.speed_spin)
         
-        self.speed_slider = QSlider(Qt.Orientation.Horizontal)
-        self.speed_slider.setMinimum(0)
-        self.speed_slider.setMaximum(20)
-        self.speed_slider.setValue(5)
-        self.speed_slider.valueChanged.connect(self.ball_manager.set_ball_speed)
-        self.speed_slider.valueChanged.connect(lambda v: self.speed_label.setText(f"Скорость: {v}"))
-        control_layout.addWidget(self.speed_slider)
+        self.status_label = QLabel("Кликните на шарик или фон")
+        self.status_label.setStyleSheet("color: blue; font-weight: bold;")
+        control_layout.addWidget(self.status_label)
+
+        # QGraphicsView
+        self.view = QGraphicsView()
+        self.view.setDragMode(QGraphicsView.NoDrag) # Отключаем перетаскивание сцены
         
-        reverse_btn = QPushButton("Развернуть")
-        reverse_btn.clicked.connect(lambda: self.ball.reverse_direction() if self.ball else None)
-        control_layout.addWidget(reverse_btn)
+        layout.addLayout(control_layout)
+        layout.addWidget(self.view)
+
+        # Инициализация контроллера шарика
+        self.ball_controller = FlyingBallController(self.view)
         
-        layout.addWidget(control_panel)
-    
-    def on_ball_clicked(self, ball, x, y):
-        print(f"✓ СИГНАЛ: Шарик нажат! Позиция: ({x:.1f}, {y:.1f})")
-    
-    def on_ball_released(self, ball, x, y):
-        print(f"✓ СИГНАЛ: Шарик отпущен! Позиция: ({x:.1f}, {y:.1f})")
-    
-    def on_ball_hit_wall(self, ball, wall):
-        print(f"✓ СИГНАЛ: Шарик ударился о стену: {wall}")
-    
-    def on_background_clicked(self, x, y):
-        print(f"✓ СИГНАЛ: Нажатие на фон в позиции ({x:.1f}, {y:.1f})")
-        if self.ball:
-            self.ball.reverse_direction()
-    
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.ball_manager.update_scene_rect()
+        # Подключение сигналов контроллера к слотам главного окна
+        self.ball_controller.ball_clicked.connect(self.on_ball_click)
+        self.ball_controller.background_clicked.connect(self.on_background_click)
 
+    def on_speed_changed(self, value):
+        # Делим на 2, чтобы значения 1-20 давали более плавный диапазон скорости
+        speed = value / 2.0 
+        self.ball_controller.set_speed(speed)
+        self.speed_label.setText(f"Скорость (множитель): {speed}")
 
-def main():
-    app = QApplication(sys.argv)
-    window = ExampleWindow()
-    window.show()
-    sys.exit(app.exec())
+    def on_ball_click(self, pos: QPointF):
+        self.status_label.setText(f"Клик по ШАРИКУ в точке: ({pos.x():.1f}, {pos.y():.1f})")
+        # Меняем цвет шарика при клике для наглядности
+        self.ball_controller.ball_item.setBrush(QBrush(QColor("orange")))
 
+    def on_background_click(self, pos: QPointF):
+        self.status_label.setText(f"Клик по ФОНУ в точке: ({pos.x():.1f}, {pos.y():.1f})")
+        # Возвращаем цвет
+        self.ball_controller.ball_item.setBrush(QBrush(QColor("red")))
 
 if __name__ == "__main__":
-    main()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())

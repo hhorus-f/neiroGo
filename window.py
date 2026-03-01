@@ -3,7 +3,7 @@ from PySide6.QtCore import Signal
 from UI.mainUI import Ui_MainWindow
 from authWin import Auth
 from clickMonitor import WidgetClickMonitor
-from TestWidget1 import BallSceneManager
+from TestWidget1 import FlyingBallController
 from datetime import datetime
 import locale
 
@@ -31,7 +31,10 @@ class window(QMainWindow):
         self.w1 = WidgetClickMonitor(self.ui.widget_9)
         self.w2 = WidgetClickMonitor(self.ui.widget_10)
         self.w3 = WidgetClickMonitor(self.ui.widget_11)
-        self.testView = BallSceneManager(self.ui.graphicsView)
+        self.testView = FlyingBallController(self.ui.graphicsView)
+        self.speedReact:list[float] = []
+        self.mistakes:int = 0
+
         try:
     # Попробуем установить русскую локаль
             print("Устанавливаю")
@@ -52,6 +55,8 @@ class window(QMainWindow):
         self.w2.clicked.connect(self.chooseTest)
         self.w3.clicked.connect(self.chooseTest)
         self.ui.pushButton_5.clicked.connect(self.startTests)
+        self.testView.ball_clicked(self.ball_clicked)
+        self.testView.background_clicked(self.back_clicked)
 
     def showAuth(self,ind:int):
         self.authForm.switchModes(ind)
@@ -96,6 +101,12 @@ class window(QMainWindow):
         self.ui.label_17.setText(formatted_date)
         self.ui.stackedWidget.setCurrentIndex(1)
 
+    def ball_clicked(self):
+        pass
+
+    def back_clicked(self):
+        pass
+
     def chooseTest(self,obj:QWidget,obj2:object):
         obj.setStyleSheet(f"#{str(obj.objectName())}"+'{border:2px solid red;border-radius:25px;};')
         tests = list(self.testWidgets)
@@ -114,6 +125,8 @@ class window(QMainWindow):
         self.ui.stackedWidget.setCurrentIndex(2)
 
     def startTests(self):
+        self.speedReact:list[float] = []
+        self.mistakes:int = 0
         print(self.shoosedTest)
         if self.shoosedTest == 1:
             self.startSecondTest()
@@ -123,5 +136,6 @@ class window(QMainWindow):
 
     def startSecondTest(self):
         self.ui.stackedWidget.setCurrentIndex(3)
-        self.testView.create_ball(radius=30, speed=5)
-        self.testView.start_animation()
+        self.testView.set_Size([0,0,self.geometry().width()-70,self.geometry().height()-120])
+        print(f"geometry:{self.geometry().width}")
+        
