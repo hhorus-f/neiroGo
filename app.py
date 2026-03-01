@@ -18,6 +18,7 @@ class App:
         self.dataW.SignInStatus.connect(self.win.authForm.SignInStatus)
         self.win.doGetHistory.connect(self.dataW.doGetHistory)
         self.dataW.ansGetHistory.connect(self.win.ansGetHistory)
+        self.win.doSaveHistory.connect(self.dataW.doSaveHistory)
 
     def exec(self):
         self.win.show()

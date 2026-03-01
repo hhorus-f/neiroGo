@@ -1,9 +1,8 @@
 import sys
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                               QLabel, QPushButton, QFrame, QProgressBar, QStackedWidget,
-                               QListWidget, QListWidgetItem, QGridLayout)
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
-from PySide6.QtGui import QFont, QLinearGradient, QBrush, QPalette, QIcon, QAction
+                               QLabel, QPushButton, QFrame,QGridLayout)
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 
 class MainApplication(QMainWindow):
     def __init__(self):
@@ -672,7 +671,6 @@ class ProfileWindow(QMainWindow):
     
     def apply_styles(self):
         primary_color = "#005cb3"
-        white_color = "#ffffff"
         light_bg = "#f5f7fa"
         dark_bg = "#2c3e50"
         

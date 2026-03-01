@@ -20,7 +20,8 @@ class SimpleUserDB:
                 password TEXT NOT NULL,
                 day_streak INTEGER DEFAULT 0,
                 last_date TEXT,
-                history TEXT DEFAULT '{}'
+                history TEXT DEFAULT '{}',
+                history_dates TEXT DEFAULT '{}'
             )
         """)
         self.conn.commit()
@@ -86,6 +87,15 @@ class SimpleUserDB:
             return json.loads(row["history"])
         except (json.JSONDecodeError, TypeError):
             return {}
+    
+    def get_history_dates(self, uid: int) -> Dict:
+            row = self._get_row(uid)
+            if not row:
+                return {}
+            try:
+                return json.loads(row["history_dates"])
+            except (json.JSONDecodeError, TypeError):
+                return {}
 
     def get_all_data(self, uid: int) -> Optional[dict]:
         row = self._get_row(uid)
@@ -136,6 +146,15 @@ class SimpleUserDB:
         json_str = json.dumps(history_dict, ensure_ascii=False)
         self.cursor.execute(
             "UPDATE users SET history = ? WHERE uid = ?",
+            (json_str, uid)
+        )
+        self.conn.commit()
+        return self.cursor.rowcount > 0
+    
+    def set_history_dates(self, uid: int, history_dict: dict) -> bool:
+        json_str = json.dumps(history_dict, ensure_ascii=False)
+        self.cursor.execute(
+            "UPDATE users SET history_dates = ? WHERE uid = ?",
             (json_str, uid)
         )
         self.conn.commit()

@@ -9,6 +9,7 @@ class dataWorker(QThread):
     SignInStatus = Signal(bool)
     doGetHistory = Signal()
     ansGetHistory = Signal(dict)
+    doSaveHistory = Signal(dict)
     def __init__(self, db, parent = None):
         super().__init__(parent)
         self.db:SimpleUserDB = db
@@ -20,6 +21,7 @@ class dataWorker(QThread):
         self.doCreateAccount.connect(self.createAccount)
         self.doSignIn.connect(self.signInAccount)
         self.doGetHistory.connect(self.getHistory)
+        self.doSaveHistory.connect(self.saveHistory)
 
     def createAccount(self,data:dict):
         name = data["name"]
@@ -53,6 +55,13 @@ class dataWorker(QThread):
         history = self.db.get_history(self.uid)
         print("history")
         self.ansGetHistory.emit(history)
+
+    def saveHistory(self,data:dict):
+        hist = self.db.get_history(self.uid)
+        id = len(hist)
+        hist[id] = data
+        print(hist)
+        self.db.set_history(self.uid,hist)
 
     def run(self):
         self.isRun = True

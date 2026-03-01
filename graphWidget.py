@@ -169,14 +169,14 @@ class SplitGraphWidget(QWidget):
             x = x_min + (x_max - x_min) * i / 4
             wx, _ = self.map_to_area(x, y_min, x_min, x_max, y_min, y_max, area_rect)
             if area_rect.left() + self.padding <= wx <= area_rect.right() - self.padding:
-                painter.drawText(wx - 20, x_axis_y + 15, f"{x:.1f}")
+                painter.drawText(wx - 20, x_axis_y + 15, f"{x:.2f}")
         
         # Подписи на оси Y
         for i in range(5):
             y = y_min + (y_max - y_min) * i / 4
             _, wy = self.map_to_area(x_min, y, x_min, x_max, y_min, y_max, area_rect)
             if area_rect.top() + self.padding <= wy <= area_rect.bottom() - self.padding:
-                painter.drawText(area_rect.left() + self.padding - 35, wy + 5, f"{y:.1f}")
+                painter.drawText(area_rect.left() + self.padding - 35, wy + 5, f"{y:.2f}")
     
     def draw_area_graph(self, painter, data, color, x_min, x_max, y_min, y_max, area_rect, draw_points=True):
         """Рисует график в конкретной области"""

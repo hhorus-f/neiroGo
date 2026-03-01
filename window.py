@@ -15,6 +15,7 @@ class window(QMainWindow):
     doGetHistory = Signal()
     ansGetHistory = Signal(dict)
 
+    doSaveHistory = Signal(dict)
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_MainWindow()
@@ -84,6 +85,8 @@ class window(QMainWindow):
         self.ansGetHistory.connect(self.parseHistory)
         self.ui.pushButton_8.clicked.connect(self.showChooseTest)
         self.ui.pushButton_12.clicked.connect(lambda e:self.showHome(self.name))
+        self.ui.pushButton_10.clicked.connect(lambda e:self.showHome(self.name))
+        self.ui.pushButton.clicked.connect(lambda e: self.ui.stackedWidget.setCurrentIndex(0))
         self.w1.clicked.connect(self.chooseTest)
         self.w2.clicked.connect(self.chooseTest)
         self.w3.clicked.connect(self.chooseTest)
@@ -99,6 +102,7 @@ class window(QMainWindow):
         print("data",data)
         self.data = data
         if data != {}:
+            # self.streakы
             pass
         else:
             pass
@@ -203,9 +207,9 @@ class window(QMainWindow):
         self.ui.label_62.setText(str(len(self.speedReact)))
         if len(self.speedReact) == 0:
             self.speedReact.append(10)
-        self.ui.label_64.setText(str(sum(self.speedReact)/len(self.speedReact)))
+        self.ui.label_64.setText(str(sum(self.speedReact)/len(self.speedReact)*1000)+"мс")
         print(self.speedReact, sum(self.speedReact),len(self.speedReact), sum(self.speedReact)/len(self.speedReact))
-        self.ui.label_64.setText(str(self.mistakes))
+        self.ui.label_66.setText(str(self.mistakes))
         s = sum(self.speedReact)
         self.plotData[0].append(s/len(self.speedReact))
         self.plotData[1].append(self.mistakes)
@@ -214,4 +218,11 @@ class window(QMainWindow):
         data2 = [list(range(len(self.plotData[1]))),self.plotData[1]]
         
         self.graph.set_data(data1, data2)
+        self.saveResults()
 
+    def saveResults(self):
+        current_date = datetime.now()
+        formatted_date = current_date.strftime("%d %m %Y")
+        data = {"date":f"{formatted_date}","time":f"{sum(self.speedReact)/len(self.speedReact)}","mistakes":f"{self.mistakes}","mode":f"{self.shoosedTest}"}
+        print(data)
+        self.doSaveHistory.emit(data)
