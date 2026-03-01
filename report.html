@@ -1,0 +1,387 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Go/No-Go Тренажёр — Отчёт</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            background: #f5f7fa;
+            padding: 30px;
+        }
+        
+        .report {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            color: white;
+            padding: 40px;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-bottom: 25px;
+        }
+        
+        .user-info {
+            display: flex;
+            gap: 40px;
+            font-size: 16px;
+        }
+        
+        .user-info div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Content */
+        .content {
+            padding: 40px;
+        }
+        
+        /* Section titles */
+        .section-title {
+            font-size: 24px;
+            color: #1F2937;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3B82F6;
+            display: inline-block;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: #F9FAFB;
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 5px solid #3B82F6;
+        }
+        
+        .stat-card .label {
+            color: #6B7280;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            color: #1F2937;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .unit {
+            color: #9CA3AF;
+            font-size: 14px;
+        }
+        
+        .stat-card .trend {
+            color: #10B981;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        .stat-card .trend.negative {
+            color: #EF4444;
+        }
+        
+        /* Last Session Section */
+        .last-session {
+            background: #F9FAFB;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 40px 0;
+        }
+        
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .session-header h3 {
+            font-size: 20px;
+            color: #1F2937;
+        }
+        
+        .session-date {
+            color: #6B7280;
+            font-size: 16px;
+        }
+        
+        .session-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .session-item {
+            text-align: center;
+        }
+        
+        .session-item .label {
+            color: #6B7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .session-item .value {
+            color: #1F2937;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .session-item .unit {
+            color: #9CA3AF;
+            font-size: 12px;
+        }
+        
+        /* Chart */
+        .chart-container {
+            margin-top: 40px;
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 15px;
+            padding: 30px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            color: #1F2937;
+            margin-bottom: 20px;
+        }
+        
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 30px;
+            height: 200px;
+            margin-top: 30px;
+        }
+        
+        .bar-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .bar {
+            width: 60px;
+            background: linear-gradient(180deg, #3B82F6 0%, #8B5CF6 100%);
+            border-radius: 8px 8px 0 0;
+            transition: height 0.3s;
+        }
+        
+        .bar-label {
+            color: #6B7280;
+            font-size: 14px;
+        }
+        
+        .bar-value {
+            color: #1F2937;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .progress-indicator {
+            margin-top: 30px;
+            padding: 20px;
+            background: #F3F4F6;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .progress-text {
+            color: #1F2937;
+            font-size: 16px;
+        }
+        
+        .progress-badge {
+            background: #10B981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .progress-badge.negative {
+            background: #EF4444;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #F9FAFB;
+            padding: 20px 40px;
+            text-align: center;
+            color: #6B7280;
+            font-size: 14px;
+            border-top: 1px solid #E5E7EB;
+        }
+    </style>
+</head>
+<body>
+    <div class="report">
+        <div class="header">
+            <h1>🧠 Go/No-Go Тренажёр</h1>
+            <div class="subtitle">Отчёт о прогрессе</div>
+            <div class="user-info">
+                <div>👤 Пользователь: 67</div>
+                <div>📅 Отчёт: 28.02.2026 19:06</div>
+                <div>🎯 Всего тренировок: 2</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <h2 class="section-title">Общая статистика</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Среднее время реакции</div>
+                    <div class="value">292.2</div>
+                    <div class="unit">миллисекунд</div>
+                    <div class="trend negative">
+                        Изменение: +2.7%
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="label">Средняя точность</div>
+                    <div class="value">65.8</div>
+                    <div class="unit">процентов</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="label">Среднее пропусков</div>
+                    <div class="value">20.5</div>
+                    <div class="unit">за сессию</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="label">Ложные нажатия</div>
+                    <div class="value">0.0</div>
+                    <div class="unit">за сессию</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="label">Вариабельность</div>
+                    <div class="value">40.7</div>
+                    <div class="unit">миллисекунд</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="label">Всего сессий</div>
+                    <div class="value">2</div>
+                    <div class="unit">тренировки</div>
+                </div>
+            </div>
+            
+            <div class="last-session">
+                <div class="session-header">
+                    <h3>📊 Последняя тренировка</h3>
+                    <div class="session-date">2026-02-28 12:19:42</div>
+                </div>
+                
+                <div class="session-stats">
+                    <div class="session-item">
+                        <div class="label">Время реакции</div>
+                        <div class="value">288.2</div>
+                        <div class="unit">мс</div>
+                    </div>
+                    
+                    <div class="session-item">
+                        <div class="label">Точность</div>
+                        <div class="value">31.7</div>
+                        <div class="unit">%</div>
+                    </div>
+                    
+                    <div class="session-item">
+                        <div class="label">Пропуски</div>
+                        <div class="value">41</div>
+                        <div class="unit">раз</div>
+                    </div>
+                    
+                    <div class="session-item">
+                        <div class="label">Ложные нажатия</div>
+                        <div class="value">0</div>
+                        <div class="unit">раз</div>
+                    </div>
+                    
+                    <div class="session-item">
+                        <div class="label">Вариабельность</div>
+                        <div class="value">19.1</div>
+                        <div class="unit">мс</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="section-title">Прогресс времени реакции</h2>
+            
+            <div class="chart-container">
+                <div class="chart-title">Динамика за все сессии</div>
+                
+                <div class="chart">
+                    <div class="bar-container">
+                        <div class="bar" style="height: 140px;"></div>
+                        <div class="bar-label">Сессия 1</div>
+                        <div class="bar-value">296 мс</div>
+                    </div>
+                    
+                    <div class="bar-container">
+                        <div class="bar" style="height: 135px;"></div>
+                        <div class="bar-label">Сессия 2</div>
+                        <div class="bar-value">288 мс</div>
+                    </div>
+                </div>
+                
+                <div class="progress-indicator">
+                    <span class="progress-text">📈 Изменение времени реакции</span>
+                    <span class="progress-badge negative">
+                        +2.7%
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Отчёт сгенерирован автоматически • Go/No-Go Тренажёр • 28.02.2026 19:21
+        </div>
+    </div>
+</body>
+</html>

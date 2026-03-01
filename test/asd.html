@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Go/No-Go Тренажёр — Отчёт</title>
+    <style>
+        /* Подключаем красивые шрифты */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap');
+        
+        /* Стили для печати/PDF */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0 auto;
+                page-break-after: always;
+            }
+        }
+        
+        /* Основные стили */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Страница 1 */
+        .page-1 {
+            padding: 40px;
+        }
+        
+        /* Декоративные элементы */
+        .header-decoration {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            opacity: 0.05;
+            border-radius: 0 0 0 300px;
+            z-index: 0;
+        }
+        
+        .header {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+        
+        .title-section h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            font-weight: 300;
+        }
+        
+        .user-info {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9edf5 100%);
+            padding: 20px 30px;
+            border-radius: 12px;
+            text-align: right;
+        }
+        
+        .user-info .user-id {
+            font-size: 24px;
+            font-weight: 700;
+            color: #764ba2;
+        }
+        
+        .user-info .date {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .user-info .sessions {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 18px;
+            margin-top: 8px;
+        }
+        
+        /* Карточки со статистикой */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid #f0f0f0;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .stat-trend {
+            font-size: 14px;
+            color: #27ae60;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .stat-trend.negative {
+            color: #e74c3c;
+        }
+        
+        /* Детальный блок */
+        .detail-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #f1f4f9 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .detail-section::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            opacity: 0.1;
+            border-radius: 50%;
+        }
+        
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 25px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+        }
+        
+        .detail-item {
+            text-align: center;
+        }
+        
+        .detail-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #764ba2;
+        }
+        
+        .detail-unit {
+            font-size: 12px;
+            color: #999;
+            margin-left: 2px;
+        }
+        
+        /* График */
+        .chart-section {
+            margin-top: 40px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid #f0f0f0;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 40px;
+            height: 200px;
+            margin-top: 30px;
+            position: relative;
+        }
+        
+        .chart-bar-wrapper {
+            flex: 0 1 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100px;
+        }
+        
+        .bar {
+            width: 60px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px 8px 0 0;
+            transition: height 0.3s ease;
+        }
+        
+        .bar-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .bar-value {
+            font-size: 12px;
+            color: #764ba2;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .chart-min-max {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            color: #888;
+            font-size: 12px;
+        }
+        
+        /* Страница 2 */
+        .page-2 {
+            padding: 40px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #f1f4f9 100%);
+        }
+        
+        .progress-container {
+            background: white;
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .progress-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            color: #333;
+        }
+        
+        .progress-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .line-chart {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .chart-axis {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 200px;
+            margin-bottom: 20px;
+            position: relative;
+            border-bottom: 2px solid #eee;
+            border-left: 2px solid #eee;
+            padding-left: 20px;
+        }
+        
+        .chart-point {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            flex: 1;
+        }
+        
+        .point-dot {
+            width: 12px;
+            height: 12px;
+            background: #764ba2;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .point-line {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transform: translateX(0);
+            z-index: 1;
+        }
+        
+        .chart-point:first-child .point-line {
+            display: none;
+        }
+        
+        .point-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #764ba2;
+            margin-bottom: 5px;
+        }
+        
+        .point-label {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .chart-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9edf5 100%);
+            border-radius: 16px;
+        }
+        
+        .stat-mini {
+            text-align: center;
+        }
+        
+        .stat-mini-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-mini-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #764ba2;
+        }
+        
+        /* Футер */
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Страница 1 -->
+    <div class="page page-1">
+        <div class="header-decoration"></div>
+        
+        <div class="header">
+            <div class="title-section">
+                <h1>Go/No-Go Тренажёр</h1>
+                <div class="subtitle">Отчёт о производительности</div>
+            </div>
+            <div class="user-info">
+                <div class="user-id">#{{ user_id }}</div>
+                <div class="date">{{ report_date }} · {{ report_time }}</div>
+                <div class="sessions">{{ total_sessions }} тренировок</div>
+            </div>
+        </div>
+        
+        <!-- Сводная статистика -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Среднее время реакции</div>
+                <div class="stat-value">{{ avg_rt }} <span style="font-size: 16px;">мс</span></div>
+                <div class="stat-trend {% if rt_change > 0 %}negative{% endif %}">
+                    <span>{% if rt_change > 0 %}▲{% else %}▼{% endif %}</span> {{ rt_change }}% от первой сессии
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">Средняя точность</div>
+                <div class="stat-value">{{ avg_accuracy }}%</div>
+                <div class="stat-trend {% if accuracy_change < 0 %}negative{% endif %}">
+                    <span>{% if accuracy_change > 0 %}▲{% else %}▼{% endif %}</span> {{ accuracy_change }}% от последней сессии
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">Вариабельность</div>
+                <div class="stat-value">{{ avg_variability }} <span style="font-size: 16px;">мс</span></div>
+                <div class="stat-trend">
+                    <span>●</span> {{ variability_trend }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Детальная статистика последней сессии -->
+        <div class="detail-section">
+            <h2 class="section-title">Последняя сессия</h2>
+            <div style="color: #666; margin-bottom: 20px; font-size: 14px;">
+                {{ last_session_date }} · {{ last_session_time }}
+            </div>
+            
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Время реакции</div>
+                    <div class="detail-value">{{ last_session_rt }} <span class="detail-unit">мс</span></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Точность</div>
+                    <div class="detail-value">{{ last_session_accuracy }}<span class="detail-unit">%</span></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Пропуски</div>
+                    <div class="detail-value">{{ last_session_misses }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Ложные нажатия</div>
+                    <div class="detail-value">{{ last_session_false_alarms }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Вариабельность</div>
+                    <div class="detail-value">{{ last_session_variability }} <span class="detail-unit">мс</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- График прогресса -->
+        <div class="chart-section">
+            <div class="chart-container">
+                <h2 class="chart-title">График прогресса</h2>
+                <div class="chart">
+                    {% for session in sessions %}
+                    <div class="chart-bar-wrapper">
+                        <div class="bar" style="height: {{ session.bar_height }}px;"></div>
+                        <div class="bar-label">Сессия {{ session.number }}</div>
+                        <div class="bar-value">{{ session.rt }} мс</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="chart-min-max">
+                    <span>▲ Макс: {{ max_rt }} мс</span>
+                    <span>▼ Мин: {{ min_rt }} мс</span>
+                    <span>📊 Улучшение: {{ improvement }} мс</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Отчёт сгенерирован автоматически · Go/No-Go Тренажёр v2.0
+        </div>
+    </div>
+    
+    <!-- Страница 2 -->
+    <div class="page page-2">
+        <div class="progress-container">
+            <div class="progress-header">
+                <h2>Динамика времени реакции</h2>
+                <div class="progress-badge">Прогресс: {{ rt_change }}%</div>
+            </div>
+            
+            <div class="line-chart">
+                <div class="chart-axis">
+                    {% for session in sessions %}
+                    <div class="chart-point">
+                        <div class="point-dot"></div>
+                        {% if not loop.first %}
+                        <div class="point-line" style="width: 100%;"></div>
+                        {% endif %}
+                        <div class="point-value">{{ session.rt }} мс</div>
+                        <div class="point-label">{{ session.date_short }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="chart-stats">
+                <div class="stat-mini">
+                    <div class="stat-mini-label">Начальное RT</div>
+                    <div class="stat-mini-value">{{ first_session_rt }} мс</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-label">Текущее RT</div>
+                    <div class="stat-mini-value">{{ last_session_rt }} мс</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-label">Улучшение</div>
+                    <div class="stat-mini-value" style="color: {% if improvement > 0 %}#27ae60{% else %}#e74c3c{% endif %};">{{ improvement }} мс {% if improvement > 0 %}▼{% else %}▲{% endif %}</div>
+                </div>
+            </div>
+            
+            <div class="footer" style="margin-top: auto;">
+                Страница 2 · Детальный анализ времени реакции
+            </div>
+        </div>
+    </div>
+</body>
+</html>
