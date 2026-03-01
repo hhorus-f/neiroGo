@@ -1,11 +1,15 @@
-from PySide6.QtWidgets import QMainWindow, QLabel, QWidget
+from PySide6.QtWidgets import QMainWindow, QLabel, QWidget, QVBoxLayout
 from PySide6.QtCore import Signal
 from UI.mainUI import Ui_MainWindow
 from authWin import Auth
 from clickMonitor import WidgetClickMonitor
 from TestWidget1 import FlyingBallController
+from Timer import ThreadTimer
+from graphWidget import SplitGraphWidget
 from datetime import datetime
+import random
 import locale
+import time
 
 class window(QMainWindow):
     doGetHistory = Signal()
@@ -16,6 +20,7 @@ class window(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.authForm = Auth()
+        self._timer = ThreadTimer()
         self.data:dict|None = None
         self.name:str
         self.streak = 0
@@ -32,8 +37,27 @@ class window(QMainWindow):
         self.w2 = WidgetClickMonitor(self.ui.widget_10)
         self.w3 = WidgetClickMonitor(self.ui.widget_11)
         self.testView = FlyingBallController(self.ui.graphicsView)
+        self.graph = SplitGraphWidget(self.ui.widget_17)
         self.speedReact:list[float] = []
         self.mistakes:int = 0
+        self.time:int = 10
+        self.plotData:list = [[0],[0]]
+        self.p_time:int
+        r = random.randint(0,100)
+        random.seed(hash(str(r)))
+        if not self.ui.widget_17.layout():
+            layout = QVBoxLayout(self.ui.widget_17)
+            layout.setContentsMargins(0, 0, 0, 0)
+        else:
+            layout = self.ui.widget_17.layout()
+        
+        # Очищаем layout и добавляем график
+        self.clear_layout(layout)
+        layout.addWidget(self.graph)
+        
+        # Устанавливаем данные
+        # self.update_graph_data()
+
 
         try:
     # Попробуем установить русскую локаль
@@ -43,7 +67,16 @@ class window(QMainWindow):
         except Exception:
             pass
         self.connectSignals()
-    
+
+
+    def clear_layout(self, layout):
+        """Очищает layout от всех виджетов"""
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+
     def connectSignals(self):
         self.ui.pushButton_2.clicked.connect(lambda e:self.showAuth(0))
         self.ui.pushButton_4.clicked.connect(lambda e:self.showAuth(1))
@@ -55,8 +88,8 @@ class window(QMainWindow):
         self.w2.clicked.connect(self.chooseTest)
         self.w3.clicked.connect(self.chooseTest)
         self.ui.pushButton_5.clicked.connect(self.startTests)
-        self.testView.ball_clicked(self.ball_clicked)
-        self.testView.background_clicked(self.back_clicked)
+        self.testView.ball_clicked.connect(self.ball_clicked)
+        self.testView.background_clicked.connect(self.back_clicked)
 
     def showAuth(self,ind:int):
         self.authForm.switchModes(ind)
@@ -102,10 +135,25 @@ class window(QMainWindow):
         self.ui.stackedWidget.setCurrentIndex(1)
 
     def ball_clicked(self):
-        pass
+        n = time.time()
+        self.speedReact.append(n-self.p_time)
+        self.testView.ball_item.setPos(random.randint(0,self.geometry().width()-100),random.randint(0,self.geometry().height()-180))
+        self.p_time = time.time()
 
     def back_clicked(self):
-        pass
+        self.mistakes += 1
+
+    def tickClock(self):
+        if self.time > 0:
+            self.time -= 1
+            if self.time >= 10:
+                self.ui.label_42.setText(f"00:{self.time}")
+            else:
+                self.ui.label_42.setText(f"00:0{self.time}")
+            self._timer.start(1,self.tickClock)
+        else:
+            self.showResults()
+        # print(self.time)
 
     def chooseTest(self,obj:QWidget,obj2:object):
         obj.setStyleSheet(f"#{str(obj.objectName())}"+'{border:2px solid red;border-radius:25px;};')
@@ -128,6 +176,10 @@ class window(QMainWindow):
         self.speedReact:list[float] = []
         self.mistakes:int = 0
         print(self.shoosedTest)
+        if self.time >= 10:
+            self.ui.label_42.setText(f"00:{self.time}")
+        else:
+            self.ui.label_42.setText(f"00:0{self.time}")
         if self.shoosedTest == 1:
             self.startSecondTest()
 
@@ -135,7 +187,31 @@ class window(QMainWindow):
         pass
 
     def startSecondTest(self):
+        self.ui.label_40.setText("Duck shoot")
         self.ui.stackedWidget.setCurrentIndex(3)
-        self.testView.set_Size([0,0,self.geometry().width()-70,self.geometry().height()-120])
-        print(f"geometry:{self.geometry().width}")
+        self.testView.set_Size([0,0,self.geometry().width()-70,self.geometry().height()-160])
+        self.p_time = time.time()
+        self._timer.start(1,self.tickClock)
+
+    def startThirdTest(self):
+        pass
+
+    def showResults(self):
+        self.ui.stackedWidget.setCurrentIndex(4)
+        if self.shoosedTest == 1:
+            self.ui.label_60.setText('Вы прошли тест:"Duck shoot"')
+        self.ui.label_62.setText(str(len(self.speedReact)))
+        if len(self.speedReact) == 0:
+            self.speedReact.append(10)
+        self.ui.label_64.setText(str(sum(self.speedReact)/len(self.speedReact)))
+        print(self.speedReact, sum(self.speedReact),len(self.speedReact), sum(self.speedReact)/len(self.speedReact))
+        self.ui.label_64.setText(str(self.mistakes))
+        s = sum(self.speedReact)
+        self.plotData[0].append(s/len(self.speedReact))
+        self.plotData[1].append(self.mistakes)
+        self.graph.set_titles("Прогресс скорости", "Прогресс точности")
+        data1 = [list(range(len(self.plotData[0]))),self.plotData[0]]
+        data2 = [list(range(len(self.plotData[1]))),self.plotData[1]]
         
+        self.graph.set_data(data1, data2)
+
